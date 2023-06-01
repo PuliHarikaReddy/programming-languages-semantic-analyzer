@@ -1,0 +1,136 @@
+/* JavaCC file for csc8310 project language */
+// Do not modify the options below.
+
+options {
+    LOOKAHEAD = 2;
+    STATIC = false;
+    OUTPUT_DIRECTORY = "output";
+    FORCE_LA_CHECK = true;
+}
+
+// Do not change the name of parser/class below.
+PARSER_BEGIN(ProjLangParser)
+
+public class ProjLangParser {
+      
+}
+
+PARSER_END(ProjLangParser)
+
+// lexer rules
+
+SKIP:
+{
+  " "
+| "\t"
+| "\n"
+| "\r"
+}
+
+/* Other */
+TOKEN :
+{
+
+  <LPAREN: "(">
+| <RPAREN: ")">
+| <SEMICOL: ";">
+| <LBRACES: "{">
+| <RBRACES: "}">
+| <ASSIGN: ":=">
+| <NOTEQUALS: "!">
+| <FUNC: "fun">
+| <WHILE: "while">
+| <DO: "do">
+| <IF: "if">
+| <THEN: "then">
+| <ELSE: "else">
+| <LET: "let">
+| <VAL: "val">
+| <IN: "in">
+| <END: "end">
+| <TRUE: "true">
+| <FALSE: "false">
+| <EQUAL: "=">
+ 
+
+}
+
+/* Identifiers */
+TOKEN :
+{
+  < ID: ["a"-"z","A"-"Z"] ( ["a"-"z","A"-"Z","0"-"9"] )* >
+}
+
+/* Numbers */
+TOKEN :
+{
+  < NUM: ( ["0"-"9"] )+ >
+}
+
+/* Operators */
+TOKEN :
+{
+  <ADDOP: "+" | "-" | "|"> 
+| <MULOP: "*" | "/" | "&"> 
+| <RELOP: "<">
+}
+
+
+// parser rules
+
+Expr input(): { Expr e;} { e = expr() <SEMICOL> <EOF> {return e;}}
+Expr expr(): {Expr e;} { e = if_exp() {return e;}
+| e = letval_exp() {return e;}
+| e = letfun_exp() {return e;}
+| e = while_exp() {return e;}
+| e = seq_exp() {return e;}
+| e = assn_exp() {return e;}
+| e = not_exp()  {return e;}
+| e = rel_exp() {return e;}
+}
+
+Expr if_exp():{Expr e1, e2, e3, output;} { <IF> e1 = expr() <THEN> e2 = expr() <ELSE> e3 = expr() {output = new IfThenExpressions(e1, e2, e3); return output;}}
+
+Expr letval_exp():{ Expr e1, e2, output; String i1;} { <LET> <VAL> <ID> {i1 = token.image;} <EQUAL> e1 = expr() <IN> e2 = expr() <END> {output = new LetValExpressions(i1, e1, e2); return output;}}
+
+Expr letfun_exp():{Expr e1, e2, output; String i1,i2;}{ <LET> <FUNC> <ID> {i1 = token.image;} <LPAREN> <ID> {i2 = token.image;} <RPAREN> <EQUAL> e1 = expr() <IN> e2 = expr() <END> {output = new LetFunExpressions(i1,i2, e1, e2); return output;} }
+
+Expr while_exp():{Expr e1, e2, output;} { <WHILE> e1 = expr() <DO> e2 = expr() {output = new WhileDoExpressions(e1, e2); return output;} }
+
+Expr seq_exp():{Expr e1, e2, output;}{ <LBRACES> e1 = expr() (<SEMICOL> e2 = expr() {e1 = new SequenceExpressions(e1, e2);})*  <RBRACES> {output = e1; return output;} }
+
+Expr not_exp():{Expr e1, output;}{ <NOTEQUALS> e1 =  expr() {output = new NotExp(e1); return output;} }
+
+Expr assn_exp():{Expr e1, output; String i1;}{ <ID> {i1 = token.image;} <ASSIGN> e1 = expr() {output = new AssignmentExpressions(i1,e1); return output;} }
+
+Expr rel_exp():{Expr e1, e2, output; String i1;}{ e1 = arith_exp() (( <RELOP>|<EQUAL>) {i1 = token.image;} e2 = arith_exp()
+							{ if (i1.equals("<")) e1 = new BinaryExpressions(e1,e2,BinOp.LT);
+							  else if (i1.equals("=")) e1 = new BinaryExpressions(e1,e2,BinOp.EQ);} )?
+							  {output = e1; return output;}}
+							
+	   
+Expr arith_exp():{Expr e1, e2, output; String i1;}{ e1 = term() ( <ADDOP> {i1 = token.image;} e2 = term()
+							{ if (i1.equals("+")) e1 = new BinaryExpressions(e1,e2,BinOp.PLUS);
+                              else if (i1.equals("-")) e1 = new BinaryExpressions(e1,e2,BinOp.MINUS);
+                              else if (i1.equals("|")) e1 = new BinaryExpressions(e1,e2,BinOp.OR); } )*
+							  {output = e1; return output;} }
+
+
+Expr term():{Expr e1, e2, output; String i1;}{ e1 = factor() ( <MULOP> {i1 = token.image;} e2 = factor() 
+							{ if (i1.equals("*")) e1 = new BinaryExpressions(e1,e2,BinOp.TIMES);
+                              else if (i1.equals("/")) e1 = new BinaryExpressions(e1,e2,BinOp.DIV);
+                              else if (i1.equals("&")) e1 = new BinaryExpressions(e1,e2,BinOp.AND); } )*
+             				 {output = e1; return output;}}
+
+Expr factor():{int i; boolean b; Expr output,e1; String i1;}{
+  <NUM> {i = Integer.parseInt(token.image); output = new IntConst(i); return output;}
+| <TRUE> {b = Boolean.parseBoolean(token.image); output = new BooleanConstants(b); return output;}
+| <FALSE> {b = Boolean.parseBoolean(token.image); output = new BooleanConstants(b) ; return output;}
+| <ID> {i1 = token.image;} <LPAREN> e1 = expr() <RPAREN> {output = new ApplicationExpressions(i1,e1); return output;}
+| <ID> {i1 = token.image; output = new VariableExpressions(i1); return output;}
+| <LPAREN> e1 = expr() <RPAREN> {return e1;}
+
+}
+
+
+

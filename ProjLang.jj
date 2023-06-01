@@ -1,0 +1,106 @@
+/* JavaCC file for csc8310 project language */
+// Do not modify the options below.
+options {
+    LOOKAHEAD = 2;
+    STATIC = false;
+    OUTPUT_DIRECTORY = "output";
+    FORCE_LA_CHECK = true;
+}
+
+// Do not change the name of parser/class below.
+PARSER_BEGIN(ProjLangParser)
+
+public class ProjLangParser {
+      // Do not add anything here.
+      // Generated parser code gets inserted here.
+}
+
+PARSER_END(ProjLangParser)
+
+SKIP:
+{
+  " "
+| "\t"
+| "\n"
+| "\r"
+}
+
+/* Other */
+TOKEN :
+{
+  <LPAREN: "(">
+| <RPAREN: ")">
+| <SEMICOL: ";">
+| <LBRACES: "{">
+| <RBRACES: "}">
+| <ASSIGN: ":=">
+| <NOTEQUALS: "!">
+| <FUNC: "fun">
+| <WHILE: "while">
+| <DO: "do">
+| <IF: "if">
+| <THEN: "then">
+| <ELSE: "else">
+| <LET: "let">
+| <VAL: "val">
+| <IN: "in">
+| <END: "end">
+| <TRUE: "true">
+| <FALSE: "false">
+| <EQUAL: "=">
+}
+
+/* Identifiers */
+TOKEN :
+{
+  < ID: ["a"-"z","A"-"Z"] ( ["a"-"z","A"-"Z","0"-"9"] )* >
+}
+
+/* Numbers */
+TOKEN :
+{
+  < NUM: ( ["0"-"9"] )+ >
+}
+
+/* Operators */
+TOKEN :
+{
+  <ADDOP: "+" | "-" | "|"> 
+| <MULOP: "*" | "/" | "&"> 
+| <RELOP: "<">
+}
+
+
+void input(): {} { expr() <SEMICOL> <EOF>}
+
+void expr(): {} { if_exp() | letval_exp() | letfunc_exp() | while_exp() | seq_exp() | assign_exp() | notequals_exp() | rel_exp() }
+
+void if_exp():{} { <IF> expr() <THEN> expr() <ELSE> expr()}
+
+void letval_exp():{} { <LET> <VAL> <ID> <EQUAL> expr() <IN> expr() <END> }
+
+void letfunc_exp():{}{ <LET> <FUNC> <ID> <LPAREN> <ID> <RPAREN> <EQUAL> expr() <IN> expr() <END> }
+
+void while_exp():{} { <WHILE> expr() <DO> expr() }
+
+void seq_exp():{}{ <LBRACES> expr() (<SEMICOL> expr())* <RBRACES> }
+
+void notequals_exp():{}{ <NOTEQUALS> expr() }
+
+void assign_exp():{}{ <ID> <ASSIGN> expr() }
+
+void rel_exp():{}{ arith_exp() (( <RELOP>|<EQUAL>) arith_exp())? }
+
+void arith_exp():{}{ term() ( <ADDOP> term() )* }
+
+void term():{}{ factor() ( <MULOP> factor())* }
+
+void factor():{}{
+  <NUM>
+| <TRUE>
+| <FALSE>
+| <ID> <LPAREN> expr() <RPAREN>
+| <ID>
+| <LPAREN> expr() <RPAREN>
+
+}
